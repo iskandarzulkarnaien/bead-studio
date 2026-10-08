@@ -5,7 +5,7 @@ import fs from 'node:fs/promises';
 import sharp from 'sharp';
 import {loadPixels,adjust,sample,gridSize} from '../src/image';
 import {palette,quantize} from '../src/color';
-import {styleDefaults,preset,iterateBatch} from '../src/settings';
+import {styleDefaults,preset,iterateBatch,styleLabel} from '../src/settings';
 
 async function main() {
  const server=spawn(process.execPath,['scripts/serve-web.cjs','site-dist','4190','/bead-studio/'],{stdio:['ignore','pipe','pipe'],windowsHide:true});
@@ -16,11 +16,14 @@ async function main() {
   const page=await browser.newPage({viewport:{width:390,height:844},acceptDownloads:true});
   const errors:string[]=[];page.on('pageerror',e=>errors.push(e.message));
   await page.addInitScript(()=>{const captured: unknown[]=[];(window as any).testPatterns=captured; const NativeWorker=window.Worker; window.Worker=class extends NativeWorker {constructor(url: string | URL,options?: WorkerOptions){super(url,options);this.addEventListener('message',({data})=>{if(data.type==='style')captured.push({...data.item,indices:Array.from(data.item.indices)});});}};});
-  await page.goto('http://127.0.0.1:4190/bead-studio/');
+  await page.goto(process.env.APP_URL || 'http://127.0.0.1:4190/bead-studio/');
+  assert.equal(await page.getByRole('button',{name:'Artistic',exact:true}).count(),0);
+  assert.equal(await page.getByRole('button',{name:'Batch',exact:true}).count(),0);
+  assert.equal(await page.getByLabel('Gamma max',{exact:true}).isVisible(),false);
   await page.getByLabel('Source image',{exact:true}).setInputFiles('fixtures/regression/gradient.png');
   await page.getByRole('status').filter({hasText:'Image ready'}).waitFor();
   await page.getByLabel('Maximum width',{exact:true}).fill('16');await page.getByLabel('Maximum height',{exact:true}).fill('16');
-  await page.getByRole('button',{name:'Batch',exact:true}).click();await page.getByRole('button',{name:'Generate batch',exact:true}).click();
+  await page.getByRole('button',{name:'Generate batch',exact:true}).click();
   await page.getByRole('status').filter({hasText:'Finished: 96 styles.'}).waitFor({timeout:60000});
   const actual=await page.evaluate(()=>(window as any).testPatterns);
   const source=await loadPixels('fixtures/regression/gradient.png'), base={...styleDefaults,maxWidth:16,maxHeight:16};
@@ -32,10 +35,31 @@ async function main() {
    const button=page.getByRole('button',{name:/Download PNG/});await button.waitFor();const pending=page.waitForEvent('download');await button.click();const download=await pending;
    const file=await download.path();assert.ok(file);const meta=await sharp(file!).metadata();assert.equal(meta.width,width*40+40);assert.equal(meta.height,height*40+40);
   }
+  await page.getByRole('button',{name:'Refine this style',exact:true}).click();
+  await page.getByLabel('Gamma',{exact:true}).fill('1.1');
+  await page.getByRole('button',{name:'Generate refinement',exact:true}).click();
+  await page.getByRole('status').filter({hasText:'Refinement added to gallery.'}).waitFor();
+  let snapshot=await page.evaluate(()=>(window as any).testPatterns);
+  assert.equal(snapshot.length,97);assert.equal(snapshot[96].settings.gamma,1.1);
+  assert.deepEqual(snapshot.slice(0,96).map((p:any)=>p.indices),actual.map((p:any)=>p.indices));
+  assert.match(await page.locator('.pagination').innerText(),/97 styles/);
+  await page.getByRole('button',{name:'Close refinement',exact:true}).click();
+  await page.getByText('Import a saved style',{exact:true}).click();
+  await page.getByLabel('Generated filename or style label').fill(styleLabel({...base,distance:'lab',gamma:.9}));
+  await page.getByRole('button',{name:'Apply style',exact:true}).click();
+  assert.equal(await page.getByLabel('Gamma',{exact:true}).inputValue(),'0.9');
+  await page.getByRole('button',{name:'Generate refinement',exact:true}).click();
+  await page.waitForFunction(()=>(window as any).testPatterns.length===98);
+  await page.getByRole('status').filter({hasText:'Refinement added to gallery.'}).waitFor();
+  assert.match(await page.locator('.pagination').innerText(),/98 styles/);
+  await page.getByText('Customize batch',{exact:true}).click();
+  assert.equal(await page.getByLabel('Gamma max',{exact:true}).inputValue(),'1');
+  await page.getByLabel('Gamma max',{exact:true}).fill('1.1');
+  assert.ok((await page.locator('aside').innerText()).includes('192 styles'));
   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   assert.deepEqual(errors,[]);
   await fs.mkdir('generated/ci',{recursive:true});await page.screenshot({path:'generated/ci/mobile.png',fullPage:true});
-  console.log('PASS: 96 browser/native fixture grids, both PNG downloads, worker/font subpaths, mobile-width layout.');
+  console.log('PASS: 96 browser/native fixture grids, both PNG downloads, refinement retention, saved-style import, custom ranges, worker/font subpaths, mobile-width layout.');
  } finally {await browser?.close();server.kill();}
 }
 main().catch(e=>{console.error(e);process.exitCode=1;});

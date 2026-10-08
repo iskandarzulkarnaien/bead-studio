@@ -4,7 +4,7 @@ A React + TypeScript static app for converting artwork to MARD bead patterns. Im
 
 ## Use
 
-Choose an image, configure Artistic settings or Batch presets, generate and compare styles, then prepare and download labeled or unlabeled PNGs. Finals default to 40 pixels per bead with a 32px option; labeled exports use white grids. The palette contains 221 MARD colors.
+Choose an image, choose a preset or customize batch ranges, generate and compare styles, then prepare and download labeled or unlabeled PNGs. Refine any selected style or import a saved style to add one variation while retaining the gallery. Finals default to 40 pixels per bead with a 32px option; labeled exports use white grids. The palette contains 221 MARD colors.
 
 Sources above 16 megapixels are rejected. Batches above 1,000 styles require confirmation, and an estimated 64 MiB retained-results budget bounds their size. Exports are limited to 20 megapixels. Keep the tab open and download results before closing it.
 

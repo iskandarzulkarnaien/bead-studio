@@ -13,7 +13,6 @@ async function main() {
   await page.goto('http://127.0.0.1:4188/beads/');
   await page.getByLabel('Source image',{exact:true}).setInputFiles(path.resolve('Art Deco Death Tarot Card.png'));
   await page.getByRole('status').filter({hasText:'Image ready'}).waitFor();
-  await page.getByRole('button',{name:'Batch',exact:true}).click();
   await page.getByRole('button',{name:'Generate batch',exact:true}).click();
   await page.getByRole('status').filter({hasText:'Finished: 96 styles.'}).waitFor({timeout:120000});
   const patterns=await page.evaluate(()=>window.testPatterns), palette=JSON.parse(await fs.readFile('src/palette.json','utf8'));
@@ -52,6 +51,7 @@ async function main() {
   await page.getByRole('button',{name:/Download PNG/}).waitFor({state:'detached'});
   await page.getByRole('button',{name:'Enlarge selected pattern'}).click();await page.getByRole('dialog').waitFor();await page.keyboard.press('Escape');
   await page.getByLabel('Preset',{exact:true}).selectOption('Texture Sweep');
+  await page.getByText('Customize batch',{exact:true}).click();
   await page.getByLabel('Gamma max',{exact:true}).fill('1.1');
   await page.getByRole('button',{name:'Generate batch',exact:true}).click();await page.getByRole('button',{name:'Continue large batch'}).waitFor();
   await page.getByRole('button',{name:'Back to settings'}).click();
@@ -69,7 +69,7 @@ async function main() {
   await page.getByText('Import a saved style',{exact:true}).click();
   await page.getByLabel('Generated filename or style label').fill('sa-average__re-box__pr-0p0__sh-0p0__ga-1p0__co-1p0__sa-1p0__di-lab__di-none__di-100p0');
   await page.getByRole('button',{name:'Apply style',exact:true}).click();
-  await page.getByRole('button',{name:'Generate pattern',exact:true}).click();await page.getByRole('status').filter({hasText:'Finished: 1 style.'}).waitFor({timeout:60000});
+  await page.getByRole('button',{name:'Generate refinement',exact:true}).click();await page.getByRole('status').filter({hasText:'Refinement added to gallery.'}).waitFor({timeout:60000});
   for(const width of [390,768,1360]) {await page.setViewportSize({width,height:900});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`Overflow at ${width}`);await page.screenshot({path:`generated/static-validation/layout-${width}.png`,fullPage:true});}
   assert.deepEqual(errors,[]);assert.ok(requests.every(url=>url.startsWith('http://127.0.0.1:4188/')));
   const report={browser:await browser.version(),exactElectronGrids:96,exactPrototypePngPixels:4,browserRegressionFixtures:manifest.length,checks:['pagination','export invalidation','enlarged preview','large-batch warning','budget rejection','cancellation','invalid source','16 MP rejection','style import','single generation','390/768/1360 layout','subpath hosting','local requests only'],physicalPhoneTested:false};
