@@ -1,0 +1,74 @@
+{
+  "name": "mard-bead-pattern-generator",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Local-processing static MARD bead pattern studio",
+  "author": "Bead Pattern Studio",
+  "main": "dist/main.js",
+  "scripts": {
+    "build:web": "node scripts/build-site.mjs",
+    "preview:web": "node scripts/serve-web.cjs site-dist 4174",
+    "build": "node scripts/build-site.mjs",
+    "typecheck": "tsc --noEmit",
+    "start": "npm run build && npm run preview:web",
+    "test": "tsx --test tests/*.test.ts",
+    "compare": "tsx scripts/compare.ts",
+    "package:win": "npm run build:electron && electron-builder --win nsis zip --x64",
+    "build:prototype": "node scripts/build-web.mjs",
+    "build:electron": "node scripts/build.mjs",
+    "start:electron": "npm run build:electron && electron .",
+    "test:web": "node --import tsx scripts/browser-ci-test.ts",
+    "test:web:reference": "node scripts/browser-app-test.cjs"
+  },
+  "dependencies": {
+    "@fontsource/arimo": "^5.3.0",
+    "bmp-js": "^0.1.0",
+    "fast-png": "^8.0.0",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "sharp": "0.35.5"
+  },
+  "devDependencies": {
+    "@types/bmp-js": "^0.1.2",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "electron": "44.5.1",
+    "electron-builder": "26.15.3",
+    "esbuild": "^0.25.0",
+    "playwright": "^1.64.0",
+    "tsx": "^4.20.0",
+    "typescript": "7.0.2"
+  },
+  "build": {
+    "appId": "local.mard.beadstudio",
+    "productName": "BeadPatternGenerator",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/*.js",
+      "dist/*.html",
+      "dist/*.css",
+      "package.json"
+    ],
+    "asar": true,
+    "npmRebuild": false,
+    "win": {
+      "target": [
+        "nsis",
+        "zip"
+      ],
+      "signAndEditExecutable": false,
+      "artifactName": "BeadPatternGenerator-Portable-win-${arch}.${ext}"
+    },
+    "nsis": {
+      "artifactName": "BeadPatternGenerator-Setup.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true
+    }
+  }
+}

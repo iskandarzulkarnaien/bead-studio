@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.venv/
+.build-venv/
+node_modules/
+dist/
+build/
+generated/
+reference-output/
+batch_smoke/
+release/
+web-dist/
+*.log
+.DS_Store
+Thumbs.db
+site-dist/
+.codex-remote-attachments/

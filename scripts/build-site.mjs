@@ -1,0 +1,10 @@
+import {build} from 'esbuild';
+import {mkdir,copyFile,unlink} from 'node:fs/promises';
+await mkdir('site-dist/assets',{recursive:true});
+await build({entryPoints:['src/browser/App.tsx','src/browser/generation-worker.ts'],bundle:true,platform:'browser',format:'esm',outdir:'site-dist',target:['chrome110','safari17','firefox115'],jsx:'automatic',define:{'process.env.NODE_ENV':'"production"'},minify:true,sourcemap:false});
+for (const file of ['App.js.map','generation-worker.js.map']) await unlink(`site-dist/${file}`).catch(e => {if(e.code !== 'ENOENT') throw e;});
+await copyFile('src/browser/app.html','site-dist/index.html');
+await copyFile('src/browser/app.css','site-dist/app.css');
+await copyFile('node_modules/@fontsource/arimo/files/arimo-latin-700-normal.woff2','site-dist/assets/label-bold.woff2');
+await copyFile('node_modules/@fontsource/arimo/LICENSE','site-dist/assets/FONT-LICENSE.txt');
+console.log('Full static app built in site-dist/.');
